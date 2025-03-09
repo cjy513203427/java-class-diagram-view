@@ -1,26 +1,93 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { JavaCodeParser, ClassInfo, FieldInfo, MethodInfo, ParameterInfo } from './parser/JavaCodeParser';
+
+// this is a variable for debugging output
+let outputChannel: vscode.OutputChannel;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	console.log('Java Class Diagram View extension is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "java-class-diagram-view" is now active!');
+	// create output channel
+	outputChannel = vscode.window.createOutputChannel('Java Class Diagram');
+	outputChannel.appendLine('Extension activated');
+	outputChannel.show();
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('java-class-diagram-view.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Java Class Diagram View!');
+	let disposable = vscode.commands.registerCommand('java-class-diagram-view.generateClassDiagram', async (uri?: vscode.Uri) => {
+		try {
+			outputChannel.appendLine('Command triggered');
+			
+			// Get the file URI
+			const fileUri = uri || (vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined);
+			
+			if (!fileUri) {
+				vscode.window.showErrorMessage('No Java file selected!');
+				return;
+			}
+
+			outputChannel.appendLine(`File path: ${fileUri.fsPath}`);
+
+			// Read the file content
+			const fileContent = await vscode.workspace.fs.readFile(fileUri);
+			const javaCode = Buffer.from(fileContent).toString('utf-8');
+
+			// Parse the Java code
+			const classInfo = await JavaCodeParser.parse(javaCode);
+
+			// Show success message with parsed info
+			vscode.window.showInformationMessage(`Successfully parsed class: ${classInfo.name}`);
+
+			// Log detailed information to output channel
+			outputChannel.clear();
+			outputChannel.appendLine('=== Class Information ===');
+			outputChannel.appendLine(`Class Name: ${classInfo.name}`);
+			outputChannel.appendLine(`Modifiers: ${classInfo.modifiers.join(', ')}`);
+			
+			if (classInfo.extends) {
+				outputChannel.appendLine(`Extends: ${classInfo.extends}`);
+			}
+			
+			if (classInfo.implements && classInfo.implements.length > 0) {
+				outputChannel.appendLine(`Implements: ${classInfo.implements.join(', ')}`);
+			}
+
+			outputChannel.appendLine('\n=== Fields ===');
+			classInfo.fields.forEach((field: FieldInfo) => {
+				outputChannel.appendLine(`${field.modifiers.join(' ')} ${field.type} ${field.name}`);
+			});
+
+			outputChannel.appendLine('\n=== Methods ===');
+			classInfo.methods.forEach((method: MethodInfo) => {
+				const params = method.parameters.map((p: ParameterInfo) => `${p.type} ${p.name}`).join(', ');
+				outputChannel.appendLine(`${method.modifiers.join(' ')} ${method.returnType} ${method.name}(${params})`);
+			});
+
+			outputChannel.show();
+
+		} catch (error) {
+			if (error instanceof Error) {
+				const errorMessage = `Error parsing Java file: ${error.message}`;
+				vscode.window.showErrorMessage(errorMessage);
+				outputChannel.appendLine(errorMessage);
+				console.error('Error details:', error);
+			} else {
+				const errorMessage = 'An unknown error occurred while parsing the Java file';
+				vscode.window.showErrorMessage(errorMessage);
+				outputChannel.appendLine(errorMessage);
+				console.error('Unknown error:', error);
+			}
+		}
 	});
 
 	context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+	if (outputChannel) {
+		outputChannel.dispose();
+	}
+}

@@ -4,20 +4,46 @@
   "description": "powerful java class diagram visualizer",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.98.0"
+    "vscode": "^1.96.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:java"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "java-class-diagram-view.helloWorld",
-        "title": "Hello World"
+        "command": "java-class-diagram-view.generateClassDiagram",
+        "title": "Generate Class Diagram"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "java-class-diagram-view.generateClassDiagram",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u",
+        "when": "editorLangId == java"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .java",
+          "command": "java-class-diagram-view.generateClassDiagram",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .java",
+          "command": "java-class-diagram-view.generateClassDiagram",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -27,8 +53,11 @@
     "lint": "eslint src",
     "test": "vscode-test"
   },
+  "dependencies": {
+    "java-parser": "^2.0.4"
+  },
   "devDependencies": {
-    "@types/vscode": "^1.98.0",
+    "@types/vscode": "^1.96.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
