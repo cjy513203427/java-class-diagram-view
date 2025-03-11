@@ -1,7 +1,10 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { JavaCodeParser, ClassInfo, FieldInfo, MethodInfo, ParameterInfo } from './parser/JavaCodeParser';
+import { PlantUMLGenerator } from './plantuml/PlantUMLGenerator';
+import { FileScanner } from './utils/FileScanner';
 
 // this is a variable for debugging output
 let outputChannel: vscode.OutputChannel;
@@ -30,18 +33,36 @@ export function activate(context: vscode.ExtensionContext) {
 
 			outputChannel.appendLine(`File path: ${fileUri.fsPath}`);
 
+			// Create output directory
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found!');
+				return;
+			}
+
+			const outputDir = path.join(workspaceFolder.uri.fsPath, 'out_classdiagram');
+
 			// Read the file content
 			const fileContent = await vscode.workspace.fs.readFile(fileUri);
 			const javaCode = Buffer.from(fileContent).toString('utf-8');
 
 			// Parse the Java code
-			const classInfo = await JavaCodeParser.parse(javaCode);
+			const classInfo = await JavaCodeParser.parse(javaCode, fileUri.fsPath);
 
-			// Show success message with parsed info
-			vscode.window.showInformationMessage(`Successfully parsed class: ${classInfo.name}`);
+			// Generate PlantUML diagram
+			const puml = PlantUMLGenerator.generateClassDiagram(classInfo);
+			
+			// Save the diagram
+			const diagramPath = await PlantUMLGenerator.saveDiagram(
+				puml,
+				outputDir,
+				classInfo.name
+			);
 
-			// Log detailed information to output channel
-			outputChannel.clear();
+			// Show success message
+			vscode.window.showInformationMessage(`Class diagram generated: ${diagramPath}`);
+
+			// Log detailed information
 			outputChannel.appendLine('=== Class Information ===');
 			outputChannel.appendLine(`Class Name: ${classInfo.name}`);
 			outputChannel.appendLine(`Modifiers: ${classInfo.modifiers.join(', ')}`);
