@@ -7,7 +7,7 @@ A Visual Studio Code extension that generates PlantUML class diagrams from Java 
 - Generate class diagrams from Java source files
 - Support for class inheritance and interfaces
 - Display class members including fields and methods
-- Show access modifiers and annotations
+- Show access modifiers
 - Parse system classes (like java.lang.String) using javap
 - Export diagrams in PlantUML format
 
