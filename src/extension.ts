@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { JavaCodeParser, ClassInfo, FieldInfo, MethodInfo, ParameterInfo } from './parser/JavaCodeParser';
 import { PlantUMLGenerator } from './plantuml/PlantUMLGenerator';
+import { SVGGenerator } from './plantuml/SVGGenerator';
 import { FileScanner } from './utils/FileScanner';
 
 // this is a variable for debugging output
@@ -52,15 +53,28 @@ export function activate(context: vscode.ExtensionContext) {
 			// Generate PlantUML diagram
 			const puml = PlantUMLGenerator.generateClassDiagram(classInfo);
 			
-			// Save the diagram
-			const diagramPath = await PlantUMLGenerator.saveDiagram(
+			// Save the PUML diagram
+			const pumlPath = await PlantUMLGenerator.saveDiagram(
 				puml,
 				outputDir,
 				classInfo.name
 			);
 
-			// Show success message
-			vscode.window.showInformationMessage(`Class diagram generated: ${diagramPath}`);
+			// Generate SVG diagram
+			try {
+				const svgPath = await SVGGenerator.generateSVG(
+					puml,
+					outputDir,
+					classInfo.name
+				);
+
+				// Show success message with both file paths
+				vscode.window.showInformationMessage(`Class diagrams generated: PUML: ${pumlPath}, SVG: ${svgPath}`);
+			} catch (svgError) {
+				// If SVG generation fails, still show the PUML success message
+				outputChannel.appendLine(`Error generating SVG: ${svgError instanceof Error ? svgError.message : 'Unknown error'}`);
+				vscode.window.showInformationMessage(`PUML diagram generated: ${pumlPath}. SVG generation failed.`);
+			}
 
 			// Log detailed information
 			outputChannel.appendLine('=== Class Information ===');
