@@ -57,13 +57,8 @@ export class PlantUMLGenerator {
             const simpleClassName = this.getSimpleClassName(classInfo.extends);
             this.processedClasses.add(simpleClassName);
             
-            // For well-known system classes, add stereotype
-            if (classInfo.extends.includes('java.applet.Applet') || 
-                classInfo.extends.endsWith('.Applet')) {
-                result += `class ${simpleClassName} <<system>> {\n}\n\n`;
-            } else {
-                result += `class ${simpleClassName} {\n}\n\n`;
-            }
+            // Simplified code - no stereotypes for any class
+            result += `class ${simpleClassName} {\n}\n\n`;
         }
         
         // Process interfaces
@@ -119,16 +114,12 @@ export class PlantUMLGenerator {
         // Check if it's a system class
         const isSystemClass = classInfo.packageName?.startsWith('java.') || classInfo.packageName?.startsWith('javax.');
         
-        // Add annotations
-        if (!isSystemClass) {
-            classInfo.annotations.forEach(annotation => {
-                result += `${annotation}\n`;
-            });
-        }
+        // No longer processing annotations as stereotypes
+        const stereotypes = '';
 
         // Add class definition
         const classType = classInfo.modifiers.includes('abstract') ? 'abstract class' : 'class';
-        result += `${classType} ${classInfo.name}`;
+        result += `${classType} ${classInfo.name}${stereotypes}`;
         
         // Add interfaces
         if (!isSystemClass && classInfo.implements && classInfo.implements.length > 0) {
@@ -157,6 +148,7 @@ export class PlantUMLGenerator {
     }
 
     private static generateField(field: FieldInfo): string {
+        // Skip annotations as per requirements
         const visibility = this.getVisibilitySymbol(field.modifiers);
         const isStatic = field.modifiers.includes('static') ? '{static} ' : '';
         return `    ${visibility}${isStatic}${field.type} ${field.name}\n`;
@@ -168,6 +160,7 @@ export class PlantUMLGenerator {
             return '';
         }
         
+        // Skip annotations as per requirements
         const visibility = this.getVisibilitySymbol(method.modifiers);
         const isStatic = method.modifiers.includes('static') ? '{static} ' : '';
         const params = method.parameters
@@ -183,4 +176,4 @@ export class PlantUMLGenerator {
         if (modifiers.includes('public')) return '+';
         return '~'; // package private
     }
-} 
+}
