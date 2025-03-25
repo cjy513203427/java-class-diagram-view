@@ -119,16 +119,24 @@ export class PlantUMLGenerator {
         // Check if it's a system class
         const isSystemClass = classInfo.packageName?.startsWith('java.') || classInfo.packageName?.startsWith('javax.');
         
-        // Add annotations
-        if (!isSystemClass) {
-            classInfo.annotations.forEach(annotation => {
-                result += `${annotation}\n`;
-            });
+        // Process annotations as stereotypes
+        let stereotypes = '';
+        if (!isSystemClass && classInfo.annotations.length > 0) {
+            // Extract annotation names without the @ symbol and parameters
+            const annotationNames = classInfo.annotations.map(annotation => {
+                // Extract the annotation name (remove @ and anything after parentheses or spaces)
+                const match = annotation.match(/@([\w.]+)/);
+                return match ? match[1] : '';
+            }).filter(name => name !== '');
+            
+            if (annotationNames.length > 0) {
+                stereotypes = ` <<${annotationNames.join(', ')}>>`;
+            }
         }
 
         // Add class definition
         const classType = classInfo.modifiers.includes('abstract') ? 'abstract class' : 'class';
-        result += `${classType} ${classInfo.name}`;
+        result += `${classType} ${classInfo.name}${stereotypes}`;
         
         // Add interfaces
         if (!isSystemClass && classInfo.implements && classInfo.implements.length > 0) {
@@ -183,4 +191,4 @@ export class PlantUMLGenerator {
         if (modifiers.includes('public')) return '+';
         return '~'; // package private
     }
-} 
+}
